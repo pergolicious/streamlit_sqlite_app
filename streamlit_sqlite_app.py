@@ -1,11 +1,14 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
+import os
+from datetime import datetime
 
 import sys
 sys.path.append('./config')
 from config import \
-    sqlite_db
+    sqlite_db, \
+    log_csv_versions_directory
 
 # Set up the page layout
 st.set_page_config(layout="wide")
@@ -143,4 +146,17 @@ if st.button('Submit Updates'):
         for col in df_filtered.columns:
             if row[col] != original_row[col]:
                 update_database_cell(table_name, unique_id_column, row[unique_id_column], col, row[col])
-    st.success(f'{page} dataset updated successfully in the database.')
+
+    # Create the directory if it does not exist
+    directory = f'{log_csv_versions_directory}/{table_name}'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    # Generate a timestamp
+    timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+
+    # Save the DataFrame to a CSV file
+    csv_filename = f"{directory}/{table_name}_{timestamp}.csv"
+    df_filtered.to_csv(csv_filename, index=False)
+
+    st.success(f'{page} dataset updated successfully in the database and saved to {csv_filename}.')
